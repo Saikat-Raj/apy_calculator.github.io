@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atal Pension Yojana (APY) Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #1a5276;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .calculator-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        
+        button {
+            background-color: #1a5276;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #154360;
+        }
+        
+        .results-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 25px;
+            display: none;
+        }
+        
+        .results-container h2 {
+            color: #1a5276;
+            margin-top: 0;
+        }
+        
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-row:last-child {
+            border-bottom: none;
+        }
+        
+        .result-label {
+            font-weight: 600;
+        }
+        
+        .result-value {
+            text-align: right;
+        }
+        
+        .nominee-fields {
+            display: none;
+            margin-top: 15px;
+            padding-left: 20px;
+            border-left: 3px solid #1a5276;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            margin-top: 5px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            .result-row {
+                flex-direction: column;
+            }
+            
+            .result-value {
+                text-align: left;
+                margin-top: 5px;
+                font-weight: 600;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Atal Pension Yojana (APY) Calculator</h1>
+    
+    <div class="calculator-container">
+        <div class="form-group">
+            <label for="starting-age">Starting Age (18-40):</label>
+            <input type="number" id="starting-age" min="18" max="40" value="30">
+            <div id="age-error" class="error-message">Starting age must be between 18 and 40</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="frequency">Contribution Frequency:</label>
+            <select id="frequency">
+                <option value="Monthly">Monthly</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Half Yearly">Half Yearly</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="pension-amount">Pension Amount (₹):</label>
+            <select id="pension-amount">
+                <option value="1000">₹ 1,000</option>
+                <option value="2000">₹ 2,000</option>
+                <option value="3000">₹ 3,000</option>
+                <option value="4000">₹ 4,000</option>
+                <option value="5000">₹ 5,000</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="death-age">Expected Age of Death:</label>
+            <input type="number" id="death-age" min="61" value="75">
+            <div id="death-age-error" class="error-message">Expected death age must be greater than 60</div>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="has-nominee">
+                Include Nominee
+            </label>
+        </div>
+        
+        <div id="nominee-fields" class="nominee-fields">
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="nominee-lumpsum">
+                    Nominee Takes Lumpsum Payment
+                </label>
+            </div>
+            
+            <div id="nominee-pension-fields">
+                <div class="form-group">
+                    <label for="nominee-age">Current Age of Nominee:</label>
+                    <input type="number" id="nominee-age" min="0" value="25">
+                </div>
+                
+                <div class="form-group">
+                    <label for="nominee-death-age">Expected Age of Death of Nominee:</label>
+                    <input type="number" id="nominee-death-age" min="1" value="75">
+                </div>
+                <div id="nominee-warning" class="error-message">Nominee's expected death age is earlier than or equal to when the policyholder dies.</div>
+            </div>
+        </div>
+        
+        <button id="calculate-btn">Calculate Returns</button>
+    </div>
+    
+    <div id="results" class="results-container">
+        <h2>Results</h2>
+        <div id="results-content"></div>
+    </div>
+    
+    <script>
+        // DOM elements
+        const startingAgeInput = document.getElementById('starting-age');
+        const frequencySelect = document.getElementById('frequency');
+        const pensionAmountSelect = document.getElementById('pension-amount');
+        const deathAgeInput = document.getElementById('death-age');
+        const hasNomineeCheckbox = document.getElementById('has-nominee');
+        const nomineeLumpsumCheckbox = document.getElementById('nominee-lumpsum');
+        const nomineeFields = document.getElementById('nominee-fields');
+        const nomineePensionFields = document.getElementById('nominee-pension-fields');
+        const nomineeAgeInput = document.getElementById('nominee-age');
+        const nomineeDeathAgeInput = document.getElementById('nominee-death-age');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resultsContainer = document.getElementById('results');
+        const resultsContent = document.getElementById('results-content');
+        const ageError = document.getElementById('age-error');
+        const deathAgeError = document.getElementById('death-age-error');
+        const nomineeWarning = document.getElementById('nominee-warning');
+        
+        // Event listeners
+        hasNomineeCheckbox.addEventListener('change', updateNomineeFields);
+        nomineeLumpsumCheckbox.addEventListener('change', updateNomineePensionFields);
+        calculateBtn.addEventListener('click', calculateReturns);
+        
+        // Simulated APY data generator
+        function simulateApyData(pensionAmount) {
+            const multiplier = pensionAmount / 1000;
+            const data = [];
+            
+            for (let age = 18; age <= 40; age++) {
+                const vestingPeriod = 60 - age;
+                
+                // Adjust contribution based on age and pension amount
+                let monthly;
+                if (age <= 20) {
+                    monthly = Math.round(42 * multiplier);
+                } else if (age <= 25) {
+                    monthly = Math.round(53 * multiplier);
+                } else if (age <= 30) {
+                    monthly = Math.round(76 * multiplier);
+                } else if (age <= 35) {
+                    monthly = Math.round(110 * multiplier);
+                } else {
+                    monthly = Math.round(198 * multiplier);
+                }
+                
+                const quarterly = monthly * 3;
+                const halfYearly = monthly * 6;
+                
+                const totalMonthly = monthly * 12 * vestingPeriod;
+                const totalQuarterly = quarterly * 4 * vestingPeriod;
+                const totalHalfYearly = halfYearly * 2 * vestingPeriod;
+                
+                data.push({
+                    "Age at entry": age,
+                    "Vesting period": vestingPeriod,
+                    "Monthly": monthly,
+                    "Quarterly": quarterly,
+                    "Half Yearly": halfYearly,
+                    "Total Monthly": totalMonthly,
+                    "Total Quarterly": totalQuarterly,
+                    "Total Half Yearly": totalHalfYearly
+                });
+            }
+            
+            return data;
+        }
+        
+        // Helper function to get lumpsum amount
+        function getLumpsumAmount(pensionAmount) {
+            const lumpsumMapping = {
+                1000: 170000,  // 1.7 lakhs
+                2000: 340000,  // 3.4 lakhs
+                3000: 510000,  // 5.1 lakhs
+                4000: 680000,  // 6.8 lakhs
+                5000: 850000,  // 8.5 lakhs
+            };
+            return lumpsumMapping[pensionAmount] || 0;
+        }
+        
+        // XIRR calculation function
+        function calculateXIRR(cashflows, dates) {
+            function npv(rate, cashflows, dates) {
+                let sum = 0;
+                for (let i = 0; i < cashflows.length; i++) {
+                    sum += cashflows[i] / Math.pow(1 + rate, dates[i]);
+                }
+                return sum;
+            }
+            
+            function f(rate) {
+                return npv(rate, cashflows, dates);
+            }
+            
+            // Use bisection method to find the root
+            let a = -0.999;
+            let b = 0.999;
+            
+            // Try to find a suitable interval
+            if (f(a) * f(b) > 0) {
+                for (let i = 0; i < 1000; i++) {
+                    b = b * 1.05;
+                    if (f(a) * f(b) < 0) {
+                        break;
+                    }
+                }
+            }
+            
+            if (f(a) * f(b) > 0) {
+                return "Could not calculate XIRR accurately";
+            }
+            
+            // Perform bisection
+            const tolerance = 1e-6;
+            const maxIterations = 100;
+            
+            for (let i = 0; i < maxIterations; i++) {
+                const c = (a + b) / 2;
+                if (Math.abs(f(c)) < tolerance) {
+                    return c * 100; // Convert to percentage
+                }
+                if (f(a) * f(c) < 0) {
+                    b = c;
+                } else {
+                    a = c;
+                }
+            }
+            
+            return ((a + b) / 2) * 100; // Convert to percentage
+        }
+        
+        // Update nominee fields based on checkbox
+        function updateNomineeFields() {
+            if (hasNomineeCheckbox.checked) {
+                nomineeFields.style.display = 'block';
+                updateNomineePensionFields();
+            } else {
+                nomineeFields.style.display = 'none';
+            }
+        }
+        
+        // Update nominee pension fields based on lumpsum checkbox
+        function updateNomineePensionFields() {
+            if (nomineeLumpsumCheckbox.checked) {
+                nomineePensionFields.style.display = 'none';
+            } else {
+                nomineePensionFields.style.display = 'block';
+            }
+        }
+        
+        // Main calculation function
+        function calculateReturns() {
+            // Validate inputs
+            const startingAge = parseInt(startingAgeInput.value);
+            const expectedDeathAge = parseInt(deathAgeInput.value);
+            
+            // Reset error messages
+            ageError.style.display = 'none';
+            deathAgeError.style.display = 'none';
+            nomineeWarning.style.display = 'none';
+            
+            // Validate starting age
+            if (startingAge < 18 || startingAge > 40) {
+                ageError.style.display = 'block';
+                return;
+            }
+            
+            // Validate expected death age
+            if (expectedDeathAge <= 60) {
+                deathAgeError.style.display = 'block';
+                return;
+            }
+            
+            // Get inputs
+            const contributionFrequency = frequencySelect.value;
+            const pensionAmount = parseInt(pensionAmountSelect.value);
+            const hasNominee = hasNomineeCheckbox.checked;
+            const nomineeTakesLumpsum = hasNominee ? nomineeLumpsumCheckbox.checked : false;
+            
+            let nomineeAge = null;
+            let nomineeDeathAge = null;
+            
+            if (hasNominee && !nomineeTakesLumpsum) {
+                nomineeAge = parseInt(nomineeAgeInput.value);
+                nomineeDeathAge = parseInt(nomineeDeathAgeInput.value);
+                
+                // Validate nominee data
+                const nomineeAgeAtPolicyholderDeath = nomineeAge + (expectedDeathAge - startingAge);
+                if (nomineeDeathAge <= nomineeAgeAtPolicyholderDeath) {
+                    nomineeWarning.style.display = 'block';
+                }
+            }
+            
+            // Calculate APY returns
+            const result = calculateApyReturns(
+                startingAge,
+                contributionFrequency,
+                pensionAmount,
+                expectedDeathAge,
+                hasNominee,
+                nomineeTakesLumpsum,
+                nomineeDeathAge,
+                nomineeAge
+            );
+            
+            // Display results
+            displayResults(result);
+        }
+        
+        // Calculate APY returns
+        function calculateApyReturns(startingAge, contributionFrequency, pensionAmount, 
+                                    expectedDeathAge, hasNominee, nomineeTakesLumpsum, 
+                                    nomineeDeathAge, nomineeAge) {
+            
+            // Get simulated APY data
+            const apyData = simulateApyData(pensionAmount);
+            
+            // Extract relevant data based on starting age
+            let entryData = null;
+            for (const entry of apyData) {
+                if (entry["Age at entry"] === startingAge) {
+                    entryData = entry;
+                    break;
+                }
+            }
+            
+            if (entryData === null) {
+                return {"error": `No data found for starting age ${startingAge}`};
+            }
+            
+            // Get vesting period (years until age 60)
+            const vestingPeriod = 60 - startingAge;
+            
+            // Get contribution amount based on frequency
+            let contribution, totalContribution, contributionsPerYear;
+            
+            if (contributionFrequency === "Monthly") {
+                contribution = entryData["Monthly"];
+                totalContribution = entryData["Total Monthly"];
+                contributionsPerYear = 12;
+            } else if (contributionFrequency === "Quarterly") {
+                contribution = entryData["Quarterly"];
+                totalContribution = entryData["Total Quarterly"];
+                contributionsPerYear = 4;
+            } else if (contributionFrequency === "Half Yearly") {
+                contribution = entryData["Half Yearly"];
+                totalContribution = entryData["Total Half Yearly"];
+                contributionsPerYear = 2;
+            } else {
+                return {"error": "Invalid contribution frequency"};
+            }
+            
+            // Initial date (today)
+            const today = new Date();
+            
+            // Create base lists for all cashflow scenarios
+            const baseContributionDates = [];
+            const baseContributionFlows = [];
+            
+            // Contributions (negative cashflows - money going out)
+            for (let i = 0; i < vestingPeriod * contributionsPerYear; i++) {
+                let paymentDate = new Date(today);
+                
+                if (contributionFrequency === "Monthly") {
+                    paymentDate.setDate(paymentDate.getDate() + 30 * i);
+                } else if (contributionFrequency === "Quarterly") {
+                    paymentDate.setDate(paymentDate.getDate() + 90 * i);
+                } else { // Half Yearly
+                    paymentDate.setDate(paymentDate.getDate() + 180 * i);
+                }
+                
+                baseContributionDates.push(paymentDate);
+                baseContributionFlows.push(-contribution);
+            }
+            
+            // Pension payments (positive cashflows - money coming in)
+            // From age 60 to death, monthly payments
+            const pensionYears = expectedDeathAge - 60;
+            const pensionMonths = pensionYears * 12;
+            
+            const pensionStartDate = new Date(today);
+            pensionStartDate.setDate(pensionStartDate.getDate() + Math.floor(365.25 * vestingPeriod));
+            
+            // Calculate total money recovered
+            const selfRecovery = pensionAmount * pensionMonths;
+            let nomineeRecovery = 0;
+            
+            // Prepare dates and cashflows for self-only XIRR
+            const selfDates = [...baseContributionDates];
+            const selfCashflows = [...baseContributionFlows];
+            
+            for (let i = 0; i < pensionMonths; i++) {
+                const paymentDate = new Date(pensionStartDate);
+                paymentDate.setDate(paymentDate.getDate() + 30 * i);
+                selfDates.push(paymentDate);
+                selfCashflows.push(pensionAmount);
+            }
+            
+            // Prepare dates and cashflows for total XIRR (including nominee)
+            const totalDates = [...selfDates];
+            const totalCashflows = [...selfCashflows];
+            
+            // Nominee payments or lumpsum
+            if (hasNominee) {
+                if (nomineeTakesLumpsum) {
+                    // Lumpsum payment to nominee
+                    const lumpsumAmount = getLumpsumAmount(pensionAmount);
+                    nomineeRecovery = lumpsumAmount;
+                    const lastDate = new Date(totalDates[totalDates.length - 1]);
+                    lastDate.setDate(lastDate.getDate() + 30);
+                    totalDates.push(lastDate);
+                    totalCashflows.push(lumpsumAmount);
+                } else {
+                    // Continue pension to nominee until nominee's death
+                    if (nomineeAge === null || nomineeDeathAge === null) {
+                        return {"error": "Nominee age and death age required"};
+                    }
+                    
+                    // Calculate how long the nominee will receive payments
+                    // Nominee's age when policyholder dies
+                    const nomineeAgeAtInheritance = nomineeAge + (expectedDeathAge - startingAge);
+                    const nomineePensionYears = nomineeDeathAge - nomineeAgeAtInheritance;
+                    const nomineePensionMonths = Math.max(0, nomineePensionYears * 12);
+                    
+                    if (nomineePensionMonths > 0) {
+                        nomineeRecovery = pensionAmount * nomineePensionMonths;
+                        
+                        const lastPaymentDate = new Date(totalDates[totalDates.length - 1]);
+                        
+                        for (let i = 0; i < nomineePensionMonths; i++) {
+                            const paymentDate = new Date(lastPaymentDate);
+                            paymentDate.setDate(paymentDate.getDate() + 30 * (i + 1));
+                            totalDates.push(paymentDate);
+                            totalCashflows.push(pensionAmount);
+                        }
+                    }
+                }
+            }
+            
+            // Calculate total recovery
+            const totalRecovery = selfRecovery + nomineeRecovery;
+            
+            // Calculate XIRR for self only
+            let selfXirr;
+            try {
+                // Convert dates to fractional years for XIRR calculation
+                const startDate = selfDates[0];
+                const selfYears = selfDates.map(date => 
+                    (date - startDate) / (1000 * 60 * 60 * 24 * 365.25)
+                );
+                
+                selfXirr = calculateXIRR(selfCashflows, selfYears);
+            } catch (e) {
+                selfXirr = "Could not calculate XIRR accurately";
+            }
+            
+            // Calculate XIRR for total (including nominee)
+            let totalXirr;
+            try {
+                // Convert dates to fractional years for XIRR calculation
+                const startDate = totalDates[0];
+                const totalYears = totalDates.map(date => 
+                    (date - startDate) / (1000 * 60 * 60 * 24 * 365.25)
+                );
+                
+                totalXirr = calculateXIRR(totalCashflows, totalYears);
+            } catch (e) {
+                totalXirr = "Could not calculate XIRR accurately";
+            }
+            
+            return {
+                "Minimum Guaranteed Pension": pensionAmount,
+                "Vesting Period (years)": vestingPeriod,
+                "Total Contribution": totalContribution,
+                "Total Recovery (Self)": selfRecovery,
+                "Total Recovery (Nominee)": nomineeRecovery,
+                "Total Recovery (Combined)": totalRecovery,
+                "Recovery Ratio": (totalRecovery / totalContribution).toFixed(2),
+                "XIRR (Self Only)": typeof selfXirr === "string" ? selfXirr : `${selfXirr.toFixed(2)}%`,
+                "XIRR (Including Nominee)": typeof totalXirr === "string" ? totalXirr : `${totalXirr.toFixed(2)}%`
+            };
+        }
+        
+        // Display results in the UI
+        function displayResults(result) {
+            resultsContent.innerHTML = '';
+            
+            if ("error" in result) {
+                resultsContent.innerHTML = `<div class="error-message" style="display:block">${result.error}</div>`;
+            } else {
+                // Format monetary values
+                const formattedResult = {...result};
+                
+                for (const key in formattedResult) {
+                    if (key.includes("Recovery") || key.includes("Contribution")) {
+                        if (typeof formattedResult[key] === "number") {
+                            formattedResult[key] = `₹ ${formattedResult[key].toLocaleString()}`;
+                        }
+                    } else if (key === "Minimum Guaranteed Pension") {
+                        formattedResult[key] = `₹ ${formattedResult[key].toLocaleString()}/month`;
+                    }
+                }
+                
+                // Create result rows
+                for (const key in formattedResult) {
+                    const row = document.createElement('div');
+                    row.className = 'result-row';
+                    
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'result-label';
+                    labelSpan.textContent = key;
+                    
+                    const valueSpan = document.createElement('span');
+                    valueSpan.className = 'result-value';
+                    valueSpan.textContent = formattedResult[key];
+                    
+                    row.appendChild(labelSpan);
+                    row.appendChild(valueSpan);
+                    resultsContent.appendChild(row);
+                }
+            }
+            
+            resultsContainer.style.display = 'block';
+            resultsContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Initialize form display
+        updateNomineeFields();
+    </script>
+</body>
+</html>
